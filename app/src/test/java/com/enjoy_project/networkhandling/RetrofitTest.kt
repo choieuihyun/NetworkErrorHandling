@@ -53,6 +53,8 @@ class RetrofitTest {
             val call = api.getData(1)
             val actualResponse = call.execute()
 
+            NetworkResult.Success(actualResponse.body())
+
             // 테스트 결과 검증
             assertTrue(actualResponse.isSuccessful)
             assertEquals(actualResponse.body(), actualResponse.body())
@@ -62,8 +64,8 @@ class RetrofitTest {
         } catch (e : Exception) {
 
             val networkError = NetworkErrorHandlerImpl()
-
-            networkError.handleNetworkError(e)
+            val errorType = networkError.handleNetworkError(e)
+            NetworkResult.Error(errorType)
 
         }
     }
