@@ -3,7 +3,7 @@ package com.enjoy_project.networkhandling
 import com.google.gson.annotations.SerializedName
 
 
-data class User(
+data class UserEntity(
 
     @SerializedName("id")
     val id: Int?,
