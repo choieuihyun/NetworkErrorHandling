@@ -1,12 +1,15 @@
 package com.enjoy_project.networkhandling
 
-import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class RetrofitImpl(private val retrofitInterface: RetrofitInterface,
-                   private val networkErrorHandler: NetworkErrorHandler) {
+class RetrofitImpl {
+
+    private val networkErrorHandler: NetworkErrorHandler = NetworkErrorHandlerImpl()
 
 /*    fun getUserList() {
 
@@ -31,19 +34,63 @@ class RetrofitImpl(private val retrofitInterface: RetrofitInterface,
 
     }*/
 
-    fun getUserList() : NetworkResult<List<User>?> {
+    // 인터페이스에서 Response로 반환하면 이렇게 사용하는데. 이게 권장되는 방법이 아니래. 예전꺼라 그런가?
+/*    suspend fun getUserList() : NetworkResult<List<UserModel>?> {
 
-        val response = retrofitInterface.userList()
+        val response = RetrofitClient.userService.userList()
 
         return try {
-            NetworkResult.Success(response.body())
+
+            // 네트워크 연결 성공 시
+            NetworkResult.Success(response.body()).mapNetworkResult { it ->
+
+                it?.map {
+                    it.toModel()
+                }
+
+            }
         } catch (e: Exception) {
             val errorType = networkErrorHandler.handleNetworkError(e)
             NetworkResult.Error(errorType)
         }
 
 
+    }*/
+
+    // 콜백 반환 타입을 인터페이스랑 똑같이 맞춰줘야지.
+    fun getUserList(callback: (NetworkResult<List<UserModel>?>) -> Unit) {
+
+        RetrofitClient.userService.userList()
+            .enqueue(object : Callback<NetworkResult<List<UserEntity>?>> {
+
+            override fun onResponse(
+                call: Call<NetworkResult<List<UserEntity>?>>,
+                response: Response<NetworkResult<List<UserEntity>?>>
+            ) {
+
+                CoroutineScope(Dispatchers.IO).launch {
+
+                    val networkResult = response.body()?.mapNetworkResult { userList ->
+                        userList?.map {
+                            it.toModel()
+                        }
+                    }
+                    if (networkResult != null) {
+                        callback(networkResult)
+                    }
+
+                }
+            }
+
+            override fun onFailure(call: Call<NetworkResult<List<UserEntity>?>>, t: Throwable) {
+            }
+
+        })
+
+
     }
 
+
 }
+
 
